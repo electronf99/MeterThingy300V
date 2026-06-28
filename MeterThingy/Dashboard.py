@@ -12,7 +12,7 @@ class Dashboard:
         self.console = Console()
         self.live: Optional[Live] = None
         self.refresh_per_second = refresh_per_second
-        self.state: Dict[str, Any] = {"title": "MeterThingy", "status": "Idle", "metrics": [], "stats": []}
+        self.state: Dict[str, Any] = {"title": "MeterThingy300V", "status": "Idle", "metrics": [], "stats": []}
 
     def start(self):
         if self.live is None:

@@ -33,14 +33,14 @@ def info_line(status):
     
     line = f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} UPTIME: {status['duration']} PT: {status['tx_time']:.3f} TTACK:{status['ack_time']:2d} Dropped: {status['failed_packets']}/{status['sent_packets']} "
     line += f"{status['metric_label']}: {status['metric_value']:3d} LOADAVG: {status['load_average']:.2f} {status['m1_smoothed']} "
-    line += f"[{'-' * int(status['metric_value'] / 4 ):<12}] [{'*' * int((status['m1_smoothed']-32768) / 3000 ):<12}]"
+    line += f"[{'-' * int(status['metric_value'] / 4 ):<12}] [{'*' * int((status['m1_smoothed']) / 3000 ):<12}]"
 
     return line
 
 # function that takes the desired value and increments it
 # so that you can smooth out changes in value.
 # Used by calling it with the last returned chaser value.
-def chaser(desired, current_value, increment=100, decrement=100):
+def chaser(desired, current_value, increment=3000, decrement=5000):
 
     if current_value != desired:
         
@@ -89,7 +89,8 @@ async def main(location, debug, dry_run, display, start_time):
         "work" : "2C:CF:67:F3:AF:3D",
         "test" : "2C:CF:67:E4:D5:10",
         "esp32-test" : "58:8C:81:ED:B3:52",
-        "esp32-main" : "D0:CF:13:41:52:92"
+        "esp32-main" : "D0:CF:13:41:52:92",
+        "esp32-300V" : "90:E5:B1:6C:2A:AE"
     }
 
     ble_address = ble_mac[location]
@@ -103,33 +104,22 @@ async def main(location, debug, dry_run, display, start_time):
 
     CollectorThread.start()
      
-    data = {
-        "LCD": {
-                "0": "This is a test",
-                "1": "ddmmyy",
-                "2": 0,
-            },
-        "meter": {
-            "m1": {
-                "v": 3,
-                },
-            "m2": {
-                "v": 10000,
-                },
-            },
-        "meta": {
-            "cpu": 0,
-            }
-    }
-
+    # data = {
+    #     "meter": {
+    #         "m1": {
+    #             "v": 3,
+    #             }
+    #     }
+    # }
+    data = {"m":"0"}
     status={}
 
     # Create the bt transmitter object
     # Requedst a bt ack every ack_interval transmit loops
-    transmitter =  Transmitter.Transmitter(ble_address, characteristic_uuid, dry_run, ack_interval=0, sleep_interval=0.05)
+    transmitter =  Transmitter.Transmitter(ble_address, characteristic_uuid, dry_run, ack_interval=0, sleep_interval=0.09)
 
     # Start smoothing at 32768 (which is needle 0) Read later comments.
-    status['m1_smoothed'] = 32768
+    status['m1_smoothed'] = 0
 
     status['tx_time'] = 0
     status['max_packet_size'] = 0
@@ -178,15 +168,15 @@ async def main(location, debug, dry_run, display, start_time):
 
         # Needle 0 is duty 32768. The needle is 0 -> 100% at duty 32768 -> 65535
         # Calculate the duty as the ratio of (metric value / max value) * 32768
-        needle_duty = (metric_value_exp/max_metric_value*32768)+32768
+        needle_duty = (metric_value_exp/max_metric_value*65000)
         
         # Final safewguard. Dont allow needle to swing all the way up to the stop
-        max_needle_duty = 60000
+        max_needle_duty = 65535
         m1_duty = int(min(needle_duty, max_needle_duty))
 
         # Avoid waving due to iron inertia. and return to 0 slowly
-        status['m1_smoothed'] = chaser(m1_duty, status['m1_smoothed'], increment=600, decrement=200)
-        data["meter"]["m1"]["v"] = status['m1_smoothed']
+        status['m1_smoothed'] = chaser(m1_duty, status['m1_smoothed'], increment=1800, decrement=1200)
+        data["m"] = str(status['m1_smoothed'])
         
         # How long since we started running
         status['duration'] = get_run_time(start_time)
@@ -197,17 +187,11 @@ async def main(location, debug, dry_run, display, start_time):
         total_cpu += psutil.cpu_percent()
         if loop == 100:
             cpu = total_cpu/100
-            data["meta"]["cpu"] = (f"{cpu:3.0f}%")
+            # data["meta"]["cpu"] = (f"{cpu:3.0f}%")
             loop = 0
             total_cpu = 0
         
         
-        # Setup LCD Display Data
-        data["LCD"]["0"] = f"{status['metric_label']}: {latest_data['v1']['value']:6.2f} L{status['load_average']:.2f}           "[:24]
-        data["LCD"]["1"] = f"{status['duration']} T{status['tx_time']:3.2f} F{transmitter.failed_packets}"
-        data["LCD"]["2"] = f"BTX: {transmitter.sent_packets:<7} V{status['metric_value']:03} "
-
-
         # Transmit data and return average packet time and packets until ack
         status['tx_time'], status['ack_time'], largest_packet  = await transmitter.transmit(data)
 
@@ -257,7 +241,7 @@ def handle_sigint(signum, frame):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Run main with location context.")
-    parser.add_argument("--location", choices=["home", "work",'test',"esp32-test","esp32-main"], default="home",
+    parser.add_argument("--location", choices=["home", "work",'test',"esp32-test","esp32-main","esp32-300V"], default="home",
                         help="Specify the location: 'home' or 'work'")
     parser.add_argument("--debug", action='store_true',
                         help="Turn on debug")
