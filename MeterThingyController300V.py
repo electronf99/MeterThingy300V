@@ -90,7 +90,8 @@ async def main(location, debug, dry_run, display, start_time):
         "test" : "2C:CF:67:E4:D5:10",
         "esp32-test" : "58:8C:81:ED:B3:52",
         "esp32-main" : "D0:CF:13:41:52:92",
-        "esp32-300V" : "90:E5:B1:6C:2A:AE"
+        #"esp32-300V" : "90:E5:B1:6C:2A:AE",
+        "esp32-300V" : "AC:A7:04:B3:31:4E"
     }
 
     ble_address = ble_mac[location]
