@@ -11,9 +11,11 @@ import psutil
 
 from MeterThingy import Transmitter
 from MeterThingy import Dashboard
-from Collectors.ASUSWrtThread import ASUSWrtThread
-from Collectors.LocalNetThread import LocalNetThread
 
+# Moved to commandline conditional in main
+
+# from Collectors.ASUSWrtThread import ASUSWrtThread
+# from Collectors.LocalNetThread import LocalNetThread
 
 
 # Get running time as a string
@@ -86,7 +88,7 @@ async def main(location, debug, dry_run, display, start_time):
     # Using Mac. Should figure out how to find mac based on name.
     ble_mac = {
         "home" : "2C:CF:67:F3:AF:3D",
-        "work" : "2C:CF:67:F3:AF:3D",
+        "work" : "AC:A7:04:B3:31:4E",
         "test" : "2C:CF:67:E4:D5:10",
         "esp32-test" : "58:8C:81:ED:B3:52",
         "esp32-main" : "D0:CF:13:41:52:92",
@@ -253,9 +255,12 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     start_time = datetime.now()
-
-
     
+    if args.location == "home":
+        from Collectors.ASUSWrtThread import ASUSWrtThread
+    else:
+        from Collectors.LocalNetThread import LocalNetThread
+      
     signal.signal(signal.SIGINT, handle_sigint)
     
     asyncio.run(main(args.location,args.debug, args.dry_run, args.display, start_time))

@@ -40,7 +40,7 @@ class Dashboard:
         
         data["metrics"] = [
             (status['metric_label'], f"{status['metric_value']}", Bar(20, 0, status['metric_value'] / 4, color="deep_sky_blue4")),
-            (f"Meter  {status['metric_label']}", f"{status['m1_smoothed']-32768}", Bar(20,0,int((status['m1_smoothed']-32768) / 3000 ),color="sky_blue3")),
+            (f"Meter  {status['metric_label']}", f"{status['m1_smoothed']}", Bar(20,0,int((status['m1_smoothed']) / 3000 ),color="sky_blue3")),
             ("Load Average", f"{status['load_average']:.2f}", f"{'-' * math.ceil(status['load_average']):<20}"),
         ]
         
