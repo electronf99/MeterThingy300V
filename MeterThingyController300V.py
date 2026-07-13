@@ -256,7 +256,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     start_time = datetime.now()
     
-    if args.location == "home":
+    if args.location == "esp32-300V":
         from Collectors.ASUSWrtThread import ASUSWrtThread
     else:
         from Collectors.LocalNetThread import LocalNetThread
